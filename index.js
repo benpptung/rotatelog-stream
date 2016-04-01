@@ -138,8 +138,11 @@ RotateLogStream.prototype._flushWrite = function(done) {
   ok = this.file.write(Buffer.concat(buffs), done);
 
   if (!ok) {
+    console.log(`waiting drain ${this.logPath} - ${(new Date())}`);
     this.waitingDrain = true;
     this.file.once('drain', function() {
+
+      console.log(`drain event ${that.logPath} - ${(new Date())}`);
       that.waitingDrain = false;
       that._flushWrite();
     });
