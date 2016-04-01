@@ -1,6 +1,6 @@
 {
   "name": "rotatelog-stream",
-  "version": "1.0.1",
+  "version": "1.0.1-alpha",
   "description": "Writable Stream rotating files when the file reach a threshold size",
   "main": "index.js",
   "scripts": {
