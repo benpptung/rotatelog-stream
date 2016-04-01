@@ -1,14 +1,17 @@
 'use strict';
 
-var fs = require('fs');
-var dirname = require('path').dirname;
-var Writable = require('stream').Writable;
-var inherits = require('util').inherits;
-var mkdirp = require('mkdirp');
-var async = require('async');
-var debug = require('debug')('rotating-log');
-var colors = require('colors');
+const fs = require('fs');
+const dirname = require('path').dirname;
+const basename = require('path').basename;
+const Writable = require('stream').Writable;
+const inherits = require('util').inherits;
+const mkdirp = require('mkdirp');
+const async = require('async');
+const debug = require('debug')('rotatelog-stream');
+const colors = require('colors');
 
+
+exports = module.exports = RotateLogStream;
 
 exports.createRotateLogStream = function(path, options) {
   return new RotateLogStream(path, options);
@@ -87,27 +90,24 @@ inherits(RotateLogStream, Writable);
 
 RotateLogStream.prototype._write = function(chunk, encoding, callback) {
 
-  var that = this;
 
   this.buffs.push(chunk);
 
-  if (this.waitingDrain) return callback();
+  if (this.waitingDrain || this.rotating) return callback();
 
-  this._thresholdCheck(function(err, action) {
+  this._thresholdCheck((err, action)=> {
     if (err) return callback(err);
 
-    if (action == 'buffering') return callback();
-
     if (action == 'rotate') {
-      that._startRotating(function(err) {
+      this._startRotating(err=> {
         if (err) return callback(err);
-        that._flushWrite(callback);
+        this._flushWrite(callback);
       });
       return;
     }
 
     if (action == 'write') {
-      that._flushWrite(callback);
+      this._flushWrite(callback);
     }
   });
 };
@@ -117,11 +117,9 @@ RotateLogStream.prototype._thresholdCheck = function(done) {
 
   debug('start thresholdCheck %s, lastLoggedNum: %s', String(this.rotating).magenta, this.lastLoggedNum);
 
-  if (this.rotating === true) return done(null, 'buffering');
-
   var maxsize = this.maxsize;
 
-  fs.stat(this.logPath, function(err, stats) {
+  fs.stat(this.logPath, (err, stats)=> {
     if (err) return done(err);
     var action =  stats.size >= maxsize  ? 'rotate' : 'write';
     done(null, action);
@@ -130,7 +128,6 @@ RotateLogStream.prototype._thresholdCheck = function(done) {
 
 RotateLogStream.prototype._flushWrite = function(done) {
 
-  var that = this;
   var buffs = this.buffs;
   var ok;
 
@@ -138,13 +135,13 @@ RotateLogStream.prototype._flushWrite = function(done) {
   ok = this.file.write(Buffer.concat(buffs), done);
 
   if (!ok) {
-    console.log(`waiting drain ${this.logPath} - ${(new Date())}`);
+    debug(`waiting drain`);
     this.waitingDrain = true;
-    this.file.once('drain', function() {
+    this.file.once('drain', _=> {
 
-      console.log(`drain event ${that.logPath} - ${(new Date())}`);
-      that.waitingDrain = false;
-      that._flushWrite();
+      debug(`drain event`);
+      this.waitingDrain = false;
+      this._flushWrite();
     });
   }
 };
@@ -152,17 +149,16 @@ RotateLogStream.prototype._flushWrite = function(done) {
 
 RotateLogStream.prototype._startRotating = function(done) {
 
-  var that = this;
   this.rotating = true;
 
   debug('start rotating'.cyan);
 
-  this._rotateFile(function(err) {
+  this._rotateFile(err=> {
     if (err) return done(err);
 
     debug('rotating finish'.cyan);
 
-    that.rotating = false;
+    this.rotating = false;
     done();
   })
 };
@@ -196,30 +192,32 @@ RotateLogStream.prototype._rotateFile = function(done) {
     tasks.push(renameFile(this.logPath + old_suffix, this.logPath + new_suffix ));
   }
 
-  tasks.push(updateContext(this, increaseLoggedNum));
+  tasks.push(this._update(increaseLoggedNum));
 
   async.series(tasks, done);
 };
 
+
+RotateLogStream.prototype._update = function (increaseLoggedNum) {
+  return done=> {
+    this.file = fs.createWriteStream(this.logPath, {flags: 'a'});
+    if (increaseLoggedNum) this.lastLoggedNum++;
+    done();
+  }
+};
+
+
 var deleteFile = function(file) {
-  return function(done) {
+  return done=> {
     fs.unlink(file, done);
   }
 };
 
 var renameFile = function(oldpath, newpath) {
-  return function(done) {
+  return done=> {
 
-    debug('rename: %s -> %s', oldpath, newpath);
+    debug('rename: %s -> %s', basename(oldpath), basename(newpath));
 
     fs.rename(oldpath, newpath, done);
-  }
-};
-
-var updateContext = function(context, increaseLoggedNum) {
-  return function(done) {
-    context.file = fs.createWriteStream(context.logPath, {flags: 'a'});
-    if (increaseLoggedNum) context.lastLoggedNum++;
-    done();
   }
 };
