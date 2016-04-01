@@ -115,7 +115,8 @@ RotateLogStream.prototype._write = function(chunk, encoding, callback) {
 
 RotateLogStream.prototype._thresholdCheck = function(done) {
 
-  debug('start thresholdCheck %s, lastLoggedNum: %s', String(this.rotating).magenta, this.lastLoggedNum);
+  debug('%s start thresholdCheck %s, lastLoggedNum: %s',
+    basename(this.logPath), String(this.rotating).magenta, this.lastLoggedNum);
 
   var maxsize = this.maxsize;
 

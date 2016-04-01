@@ -18,12 +18,12 @@ var options = {
 
 
 var writer = createRotateLog(join(__dirname, 'log'), options);
-var i = 20000;
+var i = 2000000;
 write();
 function write() {
   do {
     i -= 1;
-    writer.write(randStr());
+    setTimeout(_=> writer.write(randStr()), 1);
   } while (i > 0)
 }
 
