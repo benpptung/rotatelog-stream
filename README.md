@@ -4,22 +4,17 @@ A Writable Stream for rotating logs.
 
 ## example
 
-    var join = require('path').join;
-    var rlog = require('rotatelog-stream');
+    const join = require('path').join;
+    const RotateLog = require('rotatelog-stream');
     
-    var stream = rlog.createRotateLogStream(
-    				join(__dirname, 'log'), 
-    				{
-    				  maxsize: 1024 * 1024,
-    				  keep: 5
-    				});
+    var stream = RotateLog(join(__dirname, 'log'), { maxsize: 1024 * 1024, keep: 5});
 
 or 
 
     var join = require('path').join;
-    var RotateLog = require('rotatelog-stream').RotateLogStream;
+    var RotateLog = require('rotatelog-stream');
     
-    var stream = new RotateLog({
+    var stream = RotateLog({
       path: join(__dirname, 'log'),
       maxsize: 1024 * 1024 * 5,
       keep: 10
