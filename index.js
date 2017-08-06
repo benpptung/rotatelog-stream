@@ -6,7 +6,7 @@ const basename = require('path').basename;
 const Writable = require('stream').Writable;
 const inherits = require('util').inherits;
 const mkdirp = require('mkdirp');
-const async = require('async');
+const Async = require('util-asyncflow');
 const debug = require('debug')('rotatelog-stream');
 const colors = require('colors');
 
@@ -166,7 +166,7 @@ RotateLogStream.prototype._startRotating = function(done) {
 
 RotateLogStream.prototype._rotateFile = function(done) {
 
-  var tasks = [];
+  var fl = new Async();
   var lastNumPtr = this.lastLoggedNum;
   var increaseLoggedNum = true;
 
@@ -181,7 +181,7 @@ RotateLogStream.prototype._rotateFile = function(done) {
       debug('reach keep. lastNumPtr:%s'.red, lastNumPtr);
 
       var suffix = lastNumPtr ? '.' + lastNumPtr : '';
-      tasks.push(deleteFile(this.logPath + suffix));
+      fl.task(deleteFile(this.logPath + suffix));
       lastNumPtr--;
       increaseLoggedNum = false;
   }
@@ -190,12 +190,12 @@ RotateLogStream.prototype._rotateFile = function(done) {
   for(; lastNumPtr >= 0; lastNumPtr--) {
     var old_suffix = lastNumPtr ? '.' + lastNumPtr : '';
     var new_suffix = '.' + (lastNumPtr + 1);
-    tasks.push(renameFile(this.logPath + old_suffix, this.logPath + new_suffix ));
+    fl.task(renameFile(this.logPath + old_suffix, this.logPath + new_suffix ));
   }
 
-  tasks.push(this._update(increaseLoggedNum));
+  fl.task(this._update(increaseLoggedNum));
 
-  async.series(tasks, done);
+  fl.run(done);
 };
 
 

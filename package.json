@@ -1,11 +1,11 @@
 {
   "name": "rotatelog-stream",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Writable Stream rotating files when the file reach a threshold size",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start":"DEBUG=* node example/example.js"
+    "start": "DEBUG=* node example/example.js"
   },
   "repository": {
     "type": "git",
@@ -19,9 +19,9 @@
   "author": "Ben P.P. Tung",
   "license": "MIT",
   "dependencies": {
-    "async": "^1.5.2",
     "colors": "^1.1.2",
     "debug": "^2.2.0",
-    "mkdirp": "^0.5.1"
+    "mkdirp": "^0.5.1",
+    "util-asyncflow": "^0.2.6"
   }
 }
